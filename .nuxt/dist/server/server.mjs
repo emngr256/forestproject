@@ -1,0 +1,1 @@
+export { default } from "file:///C:/Users/km929/Desktop/urbathon/forestproject/node_modules/@nuxt/vite-builder/dist/runtime/vite-node.mjs"
