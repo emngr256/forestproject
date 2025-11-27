@@ -200,7 +200,7 @@ const adminLogin = ref({
 // Храним лайки пользователя в localStorage
 const userLikes = ref<number[]>([])
 
-const API_BASE = 'https://hakaton-lakes-back.onrender.com/api'
+const API_BASE = 'https://urb-back.onrender.com/api'
 
 // Загружаем предложения при загрузке страницы
 onMounted(() => {
