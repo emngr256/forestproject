@@ -1,9 +1,9 @@
 <template>
   <div class="min-h-screen">
     <!-- Фиксированный header -->
-    <header class="fixed top-0 left-0 right-0 py-2 z-[9999]">
+    <header class="fixed top-0 left-0 right-0 z-[9999]">
       <!-- Кнопка меню и логотип -->
-      <div class="flex items-center justify-start px-4 gap-4">
+      <div class="flex items-center justify-start p-4 gap-4">
         <!-- Кнопка меню -->
         <button 
           @click="toggleMenu"
@@ -29,7 +29,7 @@
           </svg>
         </button>
 
-        <!-- Логотип рядом с бургером - СТАНДАРТНЫЙ РАЗМЕР -->
+        <!-- Логотип рядом с бургером -->
         <NuxtLink 
           to="/" 
           class="logo-link-side"
@@ -40,21 +40,74 @@
       </div>
 
       <!-- Выпадающее меню -->
-      <div 
-        v-show="menuOpen"
-        class="dropdown-menu"
+      <transition
+        enter-active-class="transition-all duration-300 ease-out"
+        leave-active-class="transition-all duration-200 ease-in"
+        enter-from-class="opacity-0 transform -translate-y-4"
+        leave-to-class="opacity-0 transform -translate-y-4"
       >
-        <NuxtLink 
-          v-for="item in menuItems" 
-          :key="item.path"
-          :to="item.path" 
-          class="menu-item"
-          @click="closeMenu"
+        <div 
+          v-show="menuOpen"
+          class="dropdown-menu"
         >
-          <span v-if="item.icon" class="mr-2">{{ item.icon }}</span>
-          {{ item.label }}
-        </NuxtLink>
-      </div>
+          <div class="menu-header">
+            <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+              <span class="text-white text-sm">🌳</span>
+            </div>
+            <div>
+              <div class="font-semibold text-white">Forest Shield</div>
+              <div class="text-xs text-gray-300">Петропавловск</div>
+            </div>
+          </div>
+
+          <div class="menu-divider"></div>
+
+          <NuxtLink 
+            v-for="item in menuItems" 
+            :key="item.path"
+            :to="item.path" 
+            class="menu-item group"
+            @click="closeMenu"
+            :class="{ 'active': $route.path === item.path }"
+          >
+            <div class="menu-item-content">
+              <span class="menu-icon">{{ item.icon }}</span>
+              <span class="menu-label">{{ item.label }}</span>
+            </div>
+            <div class="menu-arrow">→</div>
+          </NuxtLink>
+
+          <div class="menu-divider"></div>
+
+          <!-- Быстрые действия в меню -->
+          <div class="px-4 py-2">
+            <div class="text-xs text-gray-400 mb-2">Быстрые действия</div>
+            <div class="grid grid-cols-2 gap-2">
+              <NuxtLink 
+                to="/reports" 
+                class="quick-action-menu-btn"
+                @click="closeMenu"
+              >
+                📊 Отчёты
+              </NuxtLink>
+              <NuxtLink 
+                to="/suggestions" 
+                class="quick-action-menu-btn"
+                @click="closeMenu"
+              >
+                💡 Предложения
+              </NuxtLink>
+            </div>
+          </div>
+
+          <!-- Контактная информация в меню -->
+          <div class="px-4 py-3 bg-black/30 mt-2">
+            <div class="text-xs text-gray-400 mb-1">Контакты</div>
+            <div class="text-sm text-white">+7 707 913 4080</div>
+            <div class="text-xs text-gray-300 truncate">alan27945@gmail.com km9294949@gmail.com </div>
+          </div>
+        </div>
+      </transition>
 
       <!-- Overlay для закрытия меню -->
       <div 
@@ -76,8 +129,8 @@
           <!-- About Section -->
           <div>
             <div class="flex items-center gap-2 mb-4">
-              <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                <span class="text-white ">🌳</span>
+              <div class="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
+                <span class="text-white">🌳</span>
               </div>
               <div>
                 <div class="font-semibold text-white">Forest Shield</div>
@@ -85,7 +138,7 @@
               </div>
             </div>
             <p class="text-sm">
-              Общественная инициатива по защите и восстановлению озёр города Петропавловска.
+              Общественная инициатива по защите и восстановлению лесов города Петропавловска.
             </p>
           </div>
 
@@ -114,21 +167,21 @@
             <div class="flex gap-4">
               <a 
                 href="https://aim-urbathon.netlify.app/" 
-                class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
+                class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors"
                 aria-label="Netlify"
               >
                 <Monitor :size="20" />
               </a>
               <a 
                 href="https://github.com/emngr256/forestproject" 
-                class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
+                class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors"
                 aria-label="Github"
               >
                 <Github :size="20" />
               </a>
               <a 
                 href="https://youtube.com/" 
-                class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
+                class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors"
                 aria-label="Youtube"
               >
                 <Youtube :size="20" />
@@ -149,8 +202,8 @@
               © {{ currentYear }} Все права защищены.
             </p>
             <div class="flex gap-6 text-sm">
-              <button @click="$router.push('/policy')" class="hover:text-white transition-colors px-4 py-2 hover:bg-blue-500">Политика конфиденциальности</button>
-              <button @click="$router.push('/conditions')" class="hover:text-white transition-colors px-4 py-2 hover:bg-blue-500">Условия использования</button>
+              <button @click="$router.push('/policy')" class="hover:text-white transition-colors px-4 py-2 hover:bg-green-500 rounded">Политика конфиденциальности</button>
+              <button @click="$router.push('/conditions')" class="hover:text-white transition-colors px-4 py-2 hover:bg-green-500 rounded">Условия использования</button>
             </div>
           </div>
         </div>
@@ -161,21 +214,19 @@
 
 <script setup lang="ts">
 import { Mail, Phone, MapPin, Youtube, Github, Monitor } from 'lucide-vue-next'
-import Conditions from '~/pages/conditions.vue'
-import Policy from '~/pages/policy.vue'
 
 // Состояние меню
 const menuOpen = ref(false)
+const route = useRoute()
 
-// Текущая дата и год
-const currentDate = ref(new Date().toLocaleDateString('ru-RU'))
+// Текущий год
 const currentYear = ref(new Date().getFullYear())
 
-// Элементы меню (легко добавлять/удалять)
+// Элементы меню
 const menuItems = [
   { path: '/', label: 'Главная', icon: '🏠' },
   { path: '/dropdownbar/map', label: 'Карта', icon: '🗺️' },
-  { path: '/suggestions', label: 'Предложения', icon: '📋' },
+  { path: '/suggestions', label: 'Предложения', icon: '💡' },
 ]
 
 // Функции управления меню
@@ -187,13 +238,19 @@ const closeMenu = () => {
   menuOpen.value = false
 }
 
-// Закрытие меню по Escape
+// Закрытие меню при изменении маршрута
+watch(() => route.path, () => {
+  closeMenu()
+})
+
+// Закрытие меню по Escape и клику вне меню
 onMounted(() => {
   const handleEscape = (e: KeyboardEvent) => {
     if (e.key === 'Escape' && menuOpen.value) {
       closeMenu()
     }
   }
+  
   window.addEventListener('keydown', handleEscape)
   
   onUnmounted(() => {
@@ -210,50 +267,184 @@ html, body {
   overflow-x: hidden;
 }
 
-/* Кнопка меню */
+/* Кнопка меню - как в старом варианте */
 .menu-button {
-  @apply p-3 bg-black/30 backdrop-blur-sm rounded-full shadow-lg 
-         hover:bg-black/50 active:scale-95
-         transition-all duration-300 border border-white/20;
+  padding: 12px;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  border-radius: 9999px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
 }
 
-/* Выпадающее меню */
+.menu-button:hover {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.menu-button:active {
+  transform: scale(0.95);
+}
+
+/* Выпадающее меню - поверх всего сайта */
 .dropdown-menu {
-  @apply absolute top-12 left-4 
-         bg-black/70 backdrop-blur-md text-white 
-         rounded-xl shadow-2xl py-1 min-w-48 
-         z-[9999] border border-white/20
-         overflow-hidden;
+  position: absolute;
+  top: 72px;
+  left: 16px;
+  background-color: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(20px);
+  color: white;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  padding: 12px 0;
+  min-width: 280px;
+  z-index: 10000;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow: hidden;
 }
 
-/* Элемент меню */
+/* Заголовок меню */
+.menu-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.menu-divider {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.1);
+  margin: 8px 16px;
+}
+
+/* Элемент меню - улучшенная версия */
 .menu-item {
-  @apply block px-4 py-3 
-         hover:bg-white/20 active:bg-white/30
-         transition-all duration-200 
-         border-b border-white/10 last:border-b-0
-         flex items-center;
+  display: block;
+  margin: 4px 8px;
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-/* Overlay */
+.menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.menu-item:active {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.menu-item.active {
+  background-color: rgba(34, 197, 94, 0.3);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.menu-item-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.menu-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.menu-label {
+  font-weight: 500;
+}
+
+.menu-arrow {
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: all 0.2s ease;
+  color: rgb(74, 222, 128);
+}
+
+.menu-item:hover .menu-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Кнопки быстрого действия в меню */
+.quick-action-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.quick-action-menu-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Overlay - поверх всего */
 .menu-overlay {
-  @apply fixed inset-0 bg-black/20 backdrop-blur-sm z-[9998];
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
 }
 
-/* Логотип рядом с бургером - СТАНДАРТНЫЙ РАЗМЕР */
+/* Логотип рядом с бургером - как в старом варианте */
 .logo-link-side {
-  @apply hidden md:flex items-center gap-2 px-4 py-2 
-         bg-black/30 backdrop-blur-sm rounded-full 
-         border border-white/20 shadow-lg
-         hover:bg-black/50 transition-all duration-300;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.logo-link-side:hover {
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
 .logo-text {
-  @apply text-white font-semibold text-lg tracking-wide;
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: 0.025em;
 }
 
 /* Footer heading */
 h4 {
-  @apply text-lg font-semibold;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Адаптивность */
+@media (max-width: 640px) {
+  .dropdown-menu {
+    left: 8px;
+    right: 8px;
+  }
+  
+  .logo-link-side {
+    display: flex;
+  }
 }
 </style>

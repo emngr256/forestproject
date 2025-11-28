@@ -134,101 +134,15 @@
             </div>
           </div>
 
-          <!-- Блок подписки на уведомления -->
-          <div class="bg-blue-600/20 backdrop-blur-sm rounded-2xl p-6 border border-blue-300/30">
-            <h3 class="text-white text-xl font-bold mb-4">🔔 Получать уведомления о состоянии лесов</h3>
-            <p class="text-blue-100 mb-4">
-              Подпишитесь на Telegram-уведомления о новых проблемах в лесах, экстренных ситуациях и статусе их решения.
-            </p>
-            
-            <form @submit.prevent="subscribeToNotifications" class="space-y-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="text-white text-sm font-medium mb-2 block">Ваше имя *</label>
-                  <input 
-                    v-model="subscription.name"
-                    type="text" 
-                    placeholder="Как к вам обращаться?"
-                    class="w-full px-4 py-3 rounded-lg bg-white/90 border border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
-                    required
-                  >
-                </div>
-                
-                <div>
-                  <label class="text-white text-sm font-medium mb-2 block">Telegram ID *</label>
-                  <input 
-                    v-model="subscription.telegram_id"
-                    type="text" 
-                    placeholder="@username или 123456789"
-                    class="w-full px-4 py-3 rounded-lg bg-white/90 border border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
-                    required
-                  >
-                </div>
-              </div>
-
-              <div>
-                <label class="text-white text-sm font-medium mb-2 block">Какие уведомления получать?</label>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  <label class="flex items-center text-white">
-                    <input v-model="subscription.notifications" type="checkbox" value="emergency" class="mr-2">
-                    🚨 Экстренные ситуации
-                  </label>
-                  <label class="flex items-center text-white">
-                    <input v-model="subscription.notifications" type="checkbox" value="reports" class="mr-2" checked>
-                    📊 Новые отчёты
-                  </label>
-                  <label class="flex items-center text-white">
-                    <input v-model="subscription.notifications" type="checkbox" value="updates" class="mr-2" checked>
-                    🔄 Статус решений
-                  </label>
-                  <label class="flex items-center text-white">
-                    <input v-model="subscription.notifications" type="checkbox" value="weather" class="mr-2">
-                    🌤️ Погодные предупреждения
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <label class="text-white text-sm font-medium mb-2 block">Лесные массивы для отслеживания</label>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  <label class="flex items-center text-white">
-                    <input v-model="subscription.forests" type="checkbox" value="Борковский лес" class="mr-2" checked>
-                    Борковский лес
-                  </label>
-                  <label class="flex items-center text-white">
-                    <input v-model="subscription.forests" type="checkbox" value="Сосновый бор" class="mr-2" checked>
-                    Сосновый бор
-                  </label>
-                  <label class="flex items-center text-white">
-                    <input v-model="subscription.forests" type="checkbox" value="Заречный лесопарк" class="mr-2">
-                    Заречный лесопарк
-                  </label>
-                  <label class="flex items-center text-white">
-                    <input v-model="subscription.forests" type="checkbox" value="Городской парк" class="mr-2">
-                    Городской парк
-                  </label>
-                </div>
-              </div>
-              
-              <button 
-                type="submit"
-                :disabled="isSubscribing"
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span v-if="isSubscribing">⏳ Подписка...</span>
-                <span v-else>🔔 Подписаться на уведомления</span>
-              </button>
-            </form>
-
-            <!-- Успешная подписка -->
-            <div v-if="showSubscriptionSuccess" class="mt-4 p-3 bg-green-500/90 text-white rounded-lg text-center">
-              ✅ Вы успешно подписались на уведомления!
-            </div>
-
-            <!-- Ошибка подписки -->
-            <div v-if="showSubscriptionError" class="mt-4 p-3 bg-red-500/90 text-white rounded-lg text-center">
-              ❌ Ошибка при подписке. Попробуйте еще раз.
-            </div>
+          <!-- Кнопка перехода к отчётам -->
+          <div class="text-center">
+            <a 
+              href="/reports" 
+              class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105"
+            >
+              📊 Посмотреть все отчёты
+              <ArrowRight :size="20" />
+            </a>
           </div>
         </div>
       </div>
@@ -264,6 +178,24 @@
                 </span>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Призыв к действию -->
+        <div class="text-center mt-12">
+          <div class="bg-white rounded-2xl p-8 shadow-lg border border-green-200 max-w-2xl mx-auto">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Есть идеи по улучшению?</h3>
+            <p class="text-gray-600 mb-6 text-lg">
+              Предложите свои решения экологических проблем лесов Петропавловска. 
+              Ваши идеи могут помочь сохранить наши зелёные зоны!
+            </p>
+            <a 
+              href="/suggestions" 
+              class="inline-flex items-center gap-3 bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105"
+            >
+              💡 Перейти к предложениям
+              <ArrowRight :size="24" />
+            </a>
           </div>
         </div>
       </div>
@@ -342,9 +274,9 @@
 <script setup>
 // Импорты
 import { ref } from 'vue'
-import { AlertCircle, AlertTriangle, TreePine, Flame, Trash2, Bug, Axe, Truck, Bell } from 'lucide-vue-next'
+import { AlertCircle, AlertTriangle, TreePine, Flame, Trash2, Bug, Axe, Truck, ArrowRight } from 'lucide-vue-next'
 
-const API_BASE = 'http://localhost:3001/api'
+const API_BASE = '/api'
 
 // Форма для отчётов о лесах
 const forestReport = ref({
@@ -354,14 +286,6 @@ const forestReport = ref({
   description: '',
   reporter_name: '',
   urgency_level: 'medium'
-})
-
-// Форма подписки на уведомления
-const subscription = ref({
-  name: '',
-  telegram_id: '',
-  notifications: ['reports', 'updates'],
-  forests: ['Борковский лес', 'Сосновый бор']
 })
 
 // Экстренное уведомление
@@ -377,10 +301,7 @@ const emergencyAlert = ref({
 const showEmergencyAlert = ref(false)
 const showSuccess = ref(false)
 const showError = ref(false)
-const showSubscriptionSuccess = ref(false)
-const showSubscriptionError = ref(false)
 const isSubmitting = ref(false)
-const isSubscribing = ref(false)
 
 // Функция отправки отчёта о лесе
 const submitForestReport = async () => {
@@ -392,7 +313,7 @@ const submitForestReport = async () => {
   try {
     console.log('📤 Отправка отчета:', forestReport.value)
     
-    const response = await $fetch(`${API_BASE}/telegram/forest-report`, {
+    const response = await $fetch(`${API_BASE}/forest-reports`, {
       method: 'POST',
       body: forestReport.value
     })
@@ -427,61 +348,14 @@ const submitForestReport = async () => {
   }
 }
 
-// Функция подписки на уведомления
-const subscribeToNotifications = async () => {
-  if (isSubscribing.value) return
-  
-  isSubscribing.value = true
-  showSubscriptionError.value = false
-
-  try {
-    console.log('📨 Отправка подписки:', subscription.value)
-    
-    const response = await $fetch(`${API_BASE}/telegram/subscribe`, {
-      method: 'POST',
-      body: subscription.value
-    })
-
-    console.log('✅ Ответ сервера:', response)
-
-    // Успешно подписано
-    showSubscriptionSuccess.value = true
-    
-    // Сбрасываем форму
-    subscription.value = {
-      name: '',
-      telegram_id: '',
-      notifications: ['reports', 'updates'],
-      forests: ['Борковский лес', 'Сосновый бор']
-    }
-    
-    setTimeout(() => {
-      showSubscriptionSuccess.value = false
-    }, 5000)
-  } catch (error) {
-    console.error('❌ Ошибка при подписке:', error)
-    console.error('Детали ошибки:', error.data)
-    showSubscriptionError.value = true
-    setTimeout(() => {
-      showSubscriptionError.value = false
-    }, 3000)
-  } finally {
-    isSubscribing.value = false
-  }
-}
-
 // Функция отправки экстренного уведомления
 const sendEmergencyAlert = async () => {
   try {
     console.log('🚨 Отправка экстренного уведомления:', emergencyAlert.value)
     
-    await $fetch(`${API_BASE}/telegram/forest-report`, {
+    await $fetch(`${API_BASE}/forest-alert`, {
       method: 'POST',
-      body: {
-        ...emergencyAlert.value,
-        urgency_level: 'critical',
-        report_type: emergencyAlert.value.emergency_type
-      }
+      body: emergencyAlert.value
     })
 
     showEmergencyAlert.value = false
