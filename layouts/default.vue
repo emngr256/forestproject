@@ -29,13 +29,13 @@
           </svg>
         </button>
 
-        <!-- Логотип рядом с бургером -->
+        <!-- Логотип рядом с бургером - СТАНДАРТНЫЙ РАЗМЕР -->
         <NuxtLink 
           to="/" 
           class="logo-link-side"
           @click="closeMenu"
         >
-          <span class="logo-text">Clean Waters</span>
+          <span class="logo-text">Forest Shield</span>
         </NuxtLink>
       </div>
 
@@ -77,10 +77,10 @@
           <div>
             <div class="flex items-center gap-2 mb-4">
               <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                <span class="text-white">🌊</span>
+                <span class="text-white ">🌳</span>
               </div>
               <div>
-                <div class="font-semibold text-white">Мансур и Алан</div>
+                <div class="font-semibold text-white">Forest Shield</div>
                 <div class="text-xs">Петропавловск</div>
               </div>
             </div>
@@ -95,11 +95,11 @@
             <div class="space-y-3">
               <div class="flex items-center gap-2">
                 <Mail :size="16" />
-                <span class="text-sm">sample@email.com</span>
+                <span class="text-sm">alan27945@gmail.com</span>
               </div>
               <div class="flex items-center gap-2">
                 <Phone :size="16" />
-                <span class="text-sm">+7 (XXX) XXX-XXX</span>
+                <span class="text-sm">+7 707 913 4080</span>
               </div>
               <div class="flex items-center gap-2">
                 <MapPin :size="16" />
@@ -113,14 +113,14 @@
             <h4 class="text-white mb-4">Следите за нами</h4>
             <div class="flex gap-4">
               <a 
-                href="https://aim-hktn.netlify.app/" 
+                href="https://aim-urbathon.netlify.app/" 
                 class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
                 aria-label="Netlify"
               >
                 <Monitor :size="20" />
               </a>
               <a 
-                href="https://github.com/emngr256/hakaton/" 
+                href="https://github.com/emngr256/forestproject" 
                 class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
                 aria-label="Github"
               >
@@ -159,22 +159,22 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Mail, Phone, MapPin, Youtube, Github, Monitor } from 'lucide-vue-next'
+import Conditions from '~/pages/conditions.vue'
+import Policy from '~/pages/policy.vue'
 
 // Состояние меню
 const menuOpen = ref(false)
 
-// Текущий год
+// Текущая дата и год
+const currentDate = ref(new Date().toLocaleDateString('ru-RU'))
 const currentYear = ref(new Date().getFullYear())
 
-// Элементы меню
+// Элементы меню (легко добавлять/удалять)
 const menuItems = [
   { path: '/', label: 'Главная', icon: '🏠' },
   { path: '/dropdownbar/map', label: 'Карта', icon: '🗺️' },
-  { path: '/dropdownbar/temperature', label: 'Температура', icon: '🌡️' },
-  { path: '/dropdownbar/water-level', label: 'Уровень воды', icon: '💧' },
-  { path: '/dropdownbar/infection', label: 'Заражение', icon: '⚠️' },
   { path: '/suggestions', label: 'Предложения', icon: '📋' },
 ]
 
@@ -189,7 +189,7 @@ const closeMenu = () => {
 
 // Закрытие меню по Escape
 onMounted(() => {
-  const handleEscape = (e) => {
+  const handleEscape = (e: KeyboardEvent) => {
     if (e.key === 'Escape' && menuOpen.value) {
       closeMenu()
     }
@@ -240,7 +240,7 @@ html, body {
   @apply fixed inset-0 bg-black/20 backdrop-blur-sm z-[9998];
 }
 
-/* Логотип рядом с бургером */
+/* Логотип рядом с бургером - СТАНДАРТНЫЙ РАЗМЕР */
 .logo-link-side {
   @apply hidden md:flex items-center gap-2 px-4 py-2 
          bg-black/30 backdrop-blur-sm rounded-full 
