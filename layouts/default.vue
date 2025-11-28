@@ -148,7 +148,7 @@
             <div class="space-y-3">
               <div class="flex items-center gap-2">
                 <Mail :size="16" />
-                <span class="text-sm">alan27945@gmail.com</span>
+                <span class="text-sm">alan27945@gmail.com km9294949@gmail.com</span>
               </div>
               <div class="flex items-center gap-2">
                 <Phone :size="16" />
