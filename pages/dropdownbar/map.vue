@@ -1,34 +1,5 @@
 <template>
   <div class="h-screen w-full relative overflow-hidden">
-    <!-- Кнопка информации на карте - перемещена ниже -->
-    <div class="absolute top-20 left-4 z-[1000]">
-      <button 
-        @click="showInfo = !showInfo"
-        class="p-3 bg-white/80 backdrop-blur-sm rounded-lg shadow-lg hover:bg-white transition-all duration-300 border border-gray-300"
-      >
-        ℹ️ Информация
-      </button>
-    </div>
-
-    <!-- Компактная информационная панель -->
-    <div 
-      v-if="showInfo"
-      class="absolute top-32 left-4 z-[1000] bg-white/90 backdrop-blur-sm rounded-lg shadow-xl p-4 max-w-xs max-h-[80vh] overflow-y-auto border border-gray-200"
-    >
-      <h2 class="text-lg font-bold mb-3">Водоемы Петропавловска</h2>
-      <div class="space-y-2">
-        <div v-for="waterbody in waterbodies" :key="waterbody.id" class="border-b pb-2 last:border-b-0">
-          <h3 class="font-semibold text-sm">{{ waterbody.name }}</h3>
-          <div class="text-xs text-gray-600 grid grid-cols-2 gap-1">
-            <div>Температура: {{ waterbody.temperature }}°C</div>
-            <div>Уровень: {{ waterbody.waterLevel }}м</div>
-            <div>Метан: {{ waterbody.methane }}ppm</div>
-            <div>Инфекция: {{ waterbody.infection }}%</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Карта -->
     <div class="h-full w-full">
       <LMap 
@@ -48,73 +19,23 @@
           name="OpenStreetMap"
         />
         
-        <!-- Маркеры для водоемов -->
-        <LMarker
-          v-for="waterbody in waterbodies"
-          :key="waterbody.id"
-          :lat-lng="waterbody.coordinates"
-        >
-          <LPopup>
-            <div class="p-2 max-w-xs">
-              <h3 class="font-bold text-lg mb-1">{{ waterbody.name }}</h3>
-              <div class="text-sm space-y-1">
-                <p><strong>Тип:</strong> {{ waterbody.type === 'lake' ? 'Озеро' : 'Река' }}</p>
-                <p><strong>Температура:</strong> {{ waterbody.temperature }}°C</p>
-                <p><strong>Уровень воды:</strong> {{ waterbody.waterLevel }} м</p>
-                <p><strong>Метан:</strong> {{ waterbody.methane }} ppm</p>
-                <p><strong>Инфекция:</strong> {{ waterbody.infection }}%</p>
-              </div>
-            </div>
-          </LPopup>
-          
-          <LIcon
-            :icon-url="getMarkerIcon(waterbody)"
-            :icon-size="[25, 41]"
-            :icon-anchor="[12, 41]"
-          />
-        </LMarker>
+        <!-- Контуры лесов -->
+        <LPolygon
+          v-for="forest in forests"
+          :key="`polygon-${forest.id}`"
+          :lat-lngs="forest.polygon.coordinates[0]"
+          :options="getForestStyle(forest)"
+        />
       </LMap>
-    </div>
-
-    <!-- Легенда -->
-    <div class="absolute bottom-4 right-4 z-[1000] bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-4 border border-gray-200">
-      <h3 class="font-bold mb-2">Легенда</h3>
-      <div class="space-y-2 text-sm">
-        <div class="flex items-center">
-          <div class="w-4 h-4 bg-[#00009C] rounded-full mr-2"></div>
-          <span>Озеро Поганка</span>
-        </div>
-        <div class="flex items-center">
-          <div class="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
-          <span>Река Ишим</span>
-        </div>
-        <div class="flex items-center mt-2">
-          <div class="w-4 h-4 bg-blue-300 rounded-full mr-2"></div>
-          <span>Озеро Пестрое</span>
-        </div>
-        <div class="flex items-center">
-          <div class="w-4 h-4 bg-yellow-500 rounded-full mr-2"></div>
-          <span>Озеро Белое</span>
-        </div>
-        <div class="flex items-center">
-          <div class="w-4 h-4 bg-orange-500 rounded-full mr-2"></div>
-          <span>Озеро Горькое</span>
-        </div>
-        <div class="flex items-center">
-          <div class="w-4 h-4 bg-red-500 rounded-full mr-2"></div>
-          <span>Озеро Дикое</span>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-// Импорты для leaflet
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 
-// Фикс для маркеров в Leaflet
+// Фикс для маркеров
 delete (L.Icon.Default.prototype as any)._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -125,97 +46,489 @@ L.Icon.Default.mergeOptions({
 const map = ref()
 const zoom = ref(11)
 const center = ref<[number, number]>([54.89, 69.10])
-const showInfo = ref(false)
 
-// Данные по водоемам
-const waterbodies = ref([
+// Статические данные по лесам с реальными контурами
+const forests = ref([
   {
     id: 1,
-    name: 'Озеро Пестрое',
-    coordinates: [54.836699, 69.111328] as [number, number],
-    type: 'lake',
-    temperature: 18.5,
-    waterLevel: 3.8,
-    methane: 12.3,
-    infection: 15
+    name: 'Сосновый бор (юг)',
+    type: 'pine',
+    area: 320,
+    health: 85,
+    carbon: 8500,
+    biodiversity: 78,
+    age: 45,
+    polygon: {
+      type: 'Polygon',
+      coordinates: [[
+        [54.890862, 69.123389],
+        [54.895627, 69.128581],
+        [54.902431, 69.128948],
+        [54.907856, 69.127825],
+        [54.910711, 69.126443],
+        [54.911009, 69.124176],
+        [54.899538, 69.124154],
+        [54.899501, 69.124888],
+        [54.893765, 69.122276]
+      ]]
+    }
   },
   {
     id: 2,
-    name: 'Озеро Белое',
-    coordinates: [54.927154, 69.254322] as [number, number],
-    type: 'lake',
-    temperature: 16.8,
-    waterLevel: 4.2,
-    methane: 8.7,
-    infection: 25
+    name: 'Березовая роща (север)',
+    type: 'birch',
+    area: 280,
+    health: 92,
+    carbon: 7200,
+    biodiversity: 65,
+    age: 30,
+    polygon: {
+      type: 'Polygon',
+      coordinates: [[
+      [54.926383, 69.124484],
+      [54.932095, 69.125835],
+      [54.932571, 69.129933],
+      [54.930266, 69.132593],
+      [54.931118, 69.139350],
+      [54.930993, 69.147111],
+      [54.932897, 69.149334],
+      [54.935251, 69.148724],
+      [54.937129, 69.148375],
+      [54.939409, 69.151906],
+      [54.941637, 69.149116],
+      [54.942664, 69.153737],
+      [54.941337, 69.160495],
+      [54.942514, 69.162719],
+      [54.941111, 69.168255],
+      [54.942664, 69.170915],
+      [54.944041, 69.175580],
+      [54.943716, 69.176713],
+      [54.941437, 69.175318],
+      [54.939208, 69.169607],
+      [54.938582, 69.173313],
+      [54.937530, 69.172877],
+      [54.937180, 69.176931],
+      [54.935727, 69.181640],
+      [54.938357, 69.182686],
+      [54.940561, 69.184997],
+      [54.940561, 69.189792],
+      [54.936403, 69.199384],
+      [54.933948, 69.198294],
+      [54.930216, 69.201956],
+      [54.922250, 69.211765],
+      [54.921799, 69.230250],
+      [54.920170, 69.231297],
+      [54.915209, 69.226196],
+      [54.914858, 69.215166],
+      [54.915058, 69.204615],
+      [54.922901, 69.195024],
+      [54.919869, 69.174664],
+      [54.916862, 69.172615],
+      [54.912778, 69.163154],
+      [54.914757, 69.162238],
+      [54.914432, 69.159797],
+      [54.911951, 69.158882],
+      [54.911399, 69.154827],
+      [54.917614, 69.158010],
+      [54.918015, 69.153563],
+      [54.916737, 69.153170],
+      [54.917765, 69.146151],
+      [54.921999, 69.143186],
+      [54.924780, 69.143012],
+      [54.926258, 69.138565],
+      [54.924479, 69.134641],
+      [54.923302, 69.129017],
+      [54.926383, 69.124484]
+      ]]
+    }
   },
   {
     id: 3,
-    name: 'Озеро Горькое',
-    coordinates: [54.947573, 68.951122] as [number, number],
-    type: 'lake',
-    temperature: 17.2,
-    waterLevel: 5.9,
-    methane: 15.8,
-    infection: 45
+    name: 'Смешанный лес (восток)',
+    type: 'mixed',
+    area: 450,
+    health: 78,
+    carbon: 11200,
+    biodiversity: 82,
+    age: 55,
+    polygon: {
+      type: 'Polygon',
+      coordinates: [[
+      [54.822392, 69.161940],
+      [54.831604, 69.212825],
+      [54.822350, 69.228457],
+      [54.818304, 69.210230],
+      [54.814952, 69.175435],
+      [54.817348, 69.166389],
+      [54.822392, 69.161940]
+      ]]
+    }
   },
   {
     id: 4,
-    name: 'Озеро Поганка',
-    coordinates: [54.921209, 69.053476] as [number, number],
-    type: 'lake',
-    temperature: 19.1,
-    waterLevel: 3.1,
-    methane: 10.2,
-    infection: 5
+    name: 'Смешанный лес (восток)',
+    type: 'mixed',
+    area: 450,
+    health: 78,
+    carbon: 11200,
+    biodiversity: 82,
+    age: 55,
+    polygon: {
+      type: 'Polygon',
+      coordinates: [[
+      [54.840743, 69.118414],
+      [54.831251, 69.117056],
+      [54.829122, 69.113963],
+      [54.828405, 69.114227],
+      [54.827927, 69.112907],
+      [54.826624, 69.114077],
+      [54.825407, 69.114190],
+      [54.825385, 69.116717],
+      [54.823343, 69.117358],
+      [54.823365, 69.119696],
+      [54.823864, 69.122638],
+      [54.829252, 69.121997],
+      [54.835183, 69.121619],
+      [54.838940, 69.120262]
+      ]]
+    }
   },
   {
-    id: 5,
-    name: 'Озеро Дикое',
-    coordinates: [54.840156, 69.131957] as [number, number],
-    type: 'lake',
-    temperature: 20.3,
-    waterLevel: 2.5,
-    methane: 18.9,
-    infection: 62
-  },
-  {
-    id: 6,
-    name: 'Река Ишим',
-    coordinates: [54.893110, 69.127836] as [number, number],
-    type: 'river',
-    temperature: 15.6,
-    waterLevel: 1.8,
-    methane: 5.4,
-    infection: 12
+  id: 5,
+  name: 'Центральный лесопарк',
+  type: 'mixed',
+  area: 85,
+  health: 75,
+  carbon: 2100,
+  biodiversity: 60,
+  age: 25,
+  polygon: {
+    type: 'Polygon',
+    coordinates: [[
+      [54.840070, 69.120575],
+      [54.833350, 69.123049],
+      [54.831545, 69.126512],
+      [54.831189, 69.132325],
+      [54.834632, 69.134304],
+      [54.835012, 69.136448],
+      [54.836176, 69.135458],
+      [54.836722, 69.132655],
+      [54.837363, 69.127089],
+      [54.837862, 69.123543],
+      [54.839713, 69.123708],
+      [54.840070, 69.120575] 
+    ]]
   }
+},
+{
+  id: 6,
+  name: 'Городской сквер',
+  type: 'mixed',
+  area: 25,
+  health: 80,
+  carbon: 600,
+  biodiversity: 45,
+  age: 15,
+  polygon: {
+    type: 'Polygon',
+    coordinates: [[
+      [54.827924, 69.123924],
+      [54.828232, 69.128416],
+      [54.826833, 69.127712],
+      [54.824973, 69.124021],
+      [54.827924, 69.123924]
+    ]]
+  }
+},
+{
+  id: 7,
+  name: 'Юго-Западный лесной массив',
+  type: 'pine',
+  area: 320,
+  health: 82,
+  carbon: 7800,
+  biodiversity: 68,
+  age: 40,
+  polygon: {
+    type: 'Polygon',
+    coordinates: [[
+      [54.823597, 69.111457],
+      [54.821609, 69.122709],
+      [54.818051, 69.124844],
+      [54.812230, 69.125510],
+      [54.810470, 69.128951],
+      [54.806184, 69.130061],
+      [54.803304, 69.125732],
+      [54.800393, 69.116740],
+      [54.811977, 69.121607],
+      [54.815598, 69.112624],
+      [54.819840, 69.114718],
+      [54.823597, 69.111457]
+    ]]
+  }
+},
+{
+  id: 8,
+  name: 'Восточный лесной массив',
+  type: 'birch',
+  area: 280,
+  health: 88,
+  carbon: 6500,
+  biodiversity: 72,
+  age: 38,
+  polygon: {
+    type: 'Polygon',
+    coordinates: [[
+      [54.859038, 69.081868],
+      [54.865334, 69.095846],
+      [54.868676, 69.094226],
+      [54.869725, 69.089499],
+      [54.875164, 69.091457],
+      [54.876877, 69.089972],
+      [54.875982, 69.082611],
+      [54.869182, 69.080518],
+      [54.870736, 69.077074],
+      [54.869299, 69.072346],
+      [54.865063, 69.066539],
+      [54.864208, 69.068702],
+      [54.862149, 69.066407],
+      [54.857723, 69.063848],
+      [54.858538, 69.068572],
+      [54.863393, 69.074510],
+      [54.863469, 69.082273],
+      [54.859038, 69.081868]
+    ]]
+  }
+},
+{
+  id: 9,
+  name: 'Северо-Восточный лесной массив',
+  type: 'mixed',
+  area: 28,
+  health: 82,
+  carbon: 700,
+  biodiversity: 62,
+  age: 18,
+  polygon: {
+    type: 'Polygon',
+    coordinates: [[
+      [54.872537, 69.148736],
+      [54.873470, 69.150307],
+      [54.874081, 69.150432],
+      [54.875098, 69.150182],
+      [54.875080, 69.149433],
+      [54.874841, 69.149475],
+      [54.874799, 69.148674],
+      [54.875224, 69.148435],
+      [54.875188, 69.147665],
+      [54.874930, 69.147457],
+      [54.874577, 69.147343],
+      [54.874613, 69.147000],
+      [54.874320, 69.146989],
+      [54.874260, 69.147145],
+      [54.873823, 69.147177],
+      [54.873602, 69.147572],
+      [54.873560, 69.148352],
+      [54.874075, 69.149298],
+      [54.874051, 69.149558],
+      [54.873698, 69.149308],
+      [54.873500, 69.149392],
+      [54.872537, 69.148736]
+    ]]
+  }
+},
+{
+  id: 10,
+  name: 'Юго-Восточный лесной массив',
+  type: 'pine',
+  area: 180,
+  health: 85,
+  carbon: 4500,
+  biodiversity: 65,
+  age: 30,
+  polygon: {
+    type: 'Polygon',
+    coordinates: [[
+      [54.818827, 69.135967],
+      [54.817292, 69.138724],
+      [54.816313, 69.136978],
+      [54.814486, 69.138035],
+      [54.811521, 69.141251],
+      [54.813665, 69.159444],
+      [54.816551, 69.157193],
+      [54.815836, 69.151037],
+      [54.816101, 69.148648],
+      [54.813983, 69.146902],
+      [54.814327, 69.145432],
+      [54.816471, 69.146259],
+      [54.818430, 69.143272],
+      [54.818642, 69.139781],
+      [54.819145, 69.137392],
+      [54.818827, 69.135967]
+    ]]
+  }
+},
+{
+  id: 11,
+  name: 'Северный лесной участок',
+  type: 'birch',
+  area: 12,
+  health: 88,
+  carbon: 300,
+  biodiversity: 48,
+  age: 15,
+  polygon: {
+    type: 'Polygon',
+    coordinates: [[
+      [54.958146, 69.135071],
+      [54.957105, 69.136447],
+      [54.956682, 69.135071],
+      [54.957298, 69.133326],
+      [54.958146, 69.135071]
+    ]]
+  }
+},
+{
+  id: 12,
+  name: 'Северо-Западный лесной массив',
+  type: 'mixed',
+  area: 45,
+  health: 82,
+  carbon: 1100,
+  biodiversity: 58,
+  age: 22,
+  polygon: {
+    type: 'Polygon',
+    coordinates: [[
+      [54.954870, 69.139601],
+      [54.951094, 69.141044],
+      [54.950708, 69.137286],
+      [54.951344, 69.135809],
+      [54.952192, 69.135608],
+      [54.952019, 69.138259],
+      [54.952577, 69.138292],
+      [54.952712, 69.136447],
+      [54.953811, 69.137420],
+      [54.954080, 69.135910],
+      [54.954562, 69.136011],
+      [54.954928, 69.137990],
+      [54.954870, 69.139601]
+    ]]
+  }
+},
+{
+  id: 13,
+  name: 'Западный лесной массив',
+  type: 'pine',
+  area: 65,
+  health: 84,
+  carbon: 1600,
+  biodiversity: 62,
+  age: 28,
+  polygon: {
+    type: 'Polygon',
+    coordinates: [[
+      [54.950265, 69.139634],
+      [54.950111, 69.141748],
+      [54.949648, 69.143258],
+      [54.948666, 69.144265],
+      [54.949726, 69.145876],
+      [54.948550, 69.150037],
+      [54.946237, 69.150506],
+      [54.945736, 69.149936],
+      [54.946642, 69.147453],
+      [54.945968, 69.146614],
+      [54.945813, 69.143527],
+      [54.947297, 69.142923],
+      [54.947837, 69.141144],
+      [54.949128, 69.139836],
+      [54.950265, 69.139634]
+    ]]
+  }
+},
+{
+  id: 14,
+  name: 'Северо-Восточный большой лес',
+  type: 'pine',
+  area: 320,
+  health: 87,
+  carbon: 7800,
+  biodiversity: 75,
+  age: 45,
+  polygon: {
+    type: 'Polygon',
+    coordinates: [[
+      [54.965803, 69.204154],
+      [54.961406, 69.202089],
+      [54.958455, 69.208337],
+      [54.959265, 69.220178],
+      [54.962563, 69.227283],
+      [54.963605, 69.226628],
+      [54.966787, 69.220178],
+      [54.967481, 69.211511],
+      [54.965948, 69.210856],
+      [54.965803, 69.204154]
+    ]]
+  }
+},
+{
+  id: 15,
+  name: 'Восточный большой лесной массив',
+  type: 'mixed',
+  area: 1850,
+  health: 90,
+  carbon: 42500,
+  biodiversity: 85,
+  age: 60,
+  polygon: {
+    type: 'Polygon',
+    coordinates: [[
+      [54.904075, 69.248284],
+      [54.903034, 69.259810],
+      [54.892813, 69.260504],
+      [54.893772, 69.271889],
+      [54.891695, 69.282299],
+      [54.886186, 69.288546],
+      [54.886505, 69.312429],
+      [54.886186, 69.331034],
+      [54.875962, 69.332702],
+      [54.871967, 69.355900],
+      [54.871227, 69.375543],
+      [54.857168, 69.379395],
+      [54.857761, 69.343648],
+      [54.866197, 69.319218],
+      [54.874335, 69.310474],
+      [54.870784, 69.290930],
+      [54.863680, 69.277299],
+      [54.852726, 69.266496],
+      [54.854947, 69.259296],
+      [54.858499, 69.246179],
+      [54.868416, 69.247211],
+      [54.879366, 69.239737],
+      [54.886172, 69.243088],
+      [54.890463, 69.249765],
+      [54.904075, 69.248284]
+    ]]
+  }
+}
 ])
 
-// Функция для получения цвета маркера
-const getMarkerColor = (waterbody: any) => {
-  if (waterbody.type === 'river') return '#10B981' // green for river
-  if (waterbody.name === 'Озеро Горькое') return '#F97316' // orange for Горькое
-  return getInfectionColor(waterbody.infection)
-}
-
-// Функция для получения цвета маркера в зависимости от уровня инфекции
-const getInfectionColor = (infection: number) => {
-  if (infection < 10) return '#00009C' // blue
-  if (infection < 20) return '#60A5FA' // light blue
-  if (infection < 50) return '#EAB308' // yellow
-  return '#EF4444' // red
-}
-
-// Функция для создания кастомных маркеров
-const getMarkerIcon = (waterbody: any) => {
-  const color = getMarkerColor(waterbody)
-  const svg = `
-    <svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12.5 0C5.596 0 0 5.596 0 12.5C0 21.5 12.5 41 12.5 41S25 21.5 25 12.5C25 5.596 19.404 0 12.5 0Z" fill="${color}" stroke="#ffffff" stroke-width="1"/>
-      <circle cx="12.5" cy="12.5" r="4" fill="#ffffff"/>
-    </svg>
-  `
-  return `data:image/svg+xml;base64,${btoa(svg)}`
+const getForestStyle = (forest: any) => {
+  const typeColors: { [key: string]: string } = {
+    'pine': '#059669',
+    'birch': '#CA8A04',
+    'mixed': '#2563EB'
+  }
+  
+  const baseColor = typeColors[forest.type] || '#6B7280'
+  
+  return {
+    color: baseColor,
+    weight: 3,
+    opacity: 0.8,
+    fillColor: baseColor,
+    fillOpacity: 0.3,
+  }
 }
 </script>
 
