@@ -100,6 +100,34 @@
             </div>
           </div>
 
+          <!-- Кнопка админ-панели в меню -->
+          <div class="px-4 py-3">
+            <button 
+              v-if="!isAdmin && !isLoading"
+              @click="showAdminLogin = true"
+              class="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300"
+            >
+              🔐 Админ-панель
+            </button>
+            
+            <button 
+              v-else-if="isAdmin"
+              @click="logout"
+              class="w-full flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300"
+            >
+              🚪 Выйти
+            </button>
+
+            <button 
+              v-else
+              disabled
+              class="w-full flex items-center justify-center gap-2 bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 cursor-not-allowed"
+            >
+              <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              Проверка...
+            </button>
+          </div>
+
           <!-- Контактная информация в меню -->
           <div class="px-4 py-3 bg-black/30 mt-2">
             <div class="text-xs text-gray-400 mb-1">Контакты</div>
@@ -121,6 +149,58 @@
     <main class="min-h-screen">
       <slot />
     </main>
+
+    <!-- Модальное окно авторизации -->
+    <div v-if="showAdminLogin" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
+      <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full mx-4">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">🔐 Авторизация администратора</h2>
+        
+        <form @submit.prevent="login" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Логин</label>
+            <input 
+              v-model="adminCredentials.login"
+              type="text" 
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              placeholder="Введите логин"
+              required
+              :disabled="isLoading"
+            >
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Пароль</label>
+            <input 
+              v-model="adminCredentials.password"
+              type="password" 
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              placeholder="Введите пароль"
+              required
+              :disabled="isLoading"
+            >
+          </div>
+          
+          <div class="flex gap-3 pt-4">
+            <button 
+              type="submit"
+              :disabled="isLoading"
+              class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span v-if="isLoading">⏳ Вход...</span>
+              <span v-else>Войти</span>
+            </button>
+            <button 
+              type="button"
+              @click="showAdminLogin = false"
+              :disabled="isLoading"
+              class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 disabled:opacity-50"
+            >
+              Отмена
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <!-- Footer -->
     <footer id="contact" class="bg-gray-900 text-gray-300 py-12">
@@ -180,11 +260,11 @@
                 <Github :size="20" />
               </a>
               <a 
-                href="https://youtube.com/" 
+                href="https://github.com/mansur2286969sgma/urb-back" 
                 class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors"
-                aria-label="Youtube"
+                aria-label="Github"
               >
-                <Youtube :size="20" />
+                <Github :size="20" />
               </a>
             </div>
             <div class="mt-6">
@@ -215,9 +295,21 @@
 <script setup lang="ts">
 import { Mail, Phone, MapPin, Youtube, Github, Monitor } from 'lucide-vue-next'
 
+// Временное решение - локальное состояние
+const isAdmin = ref(false)
+const isLoading = ref(false)
+const adminUser = ref(null)
+
 // Состояние меню
 const menuOpen = ref(false)
 const route = useRoute()
+const showAdminLogin = ref(false)
+
+// Данные для формы входа
+const adminCredentials = ref({
+  login: '',
+  password: ''
+})
 
 // Текущий год
 const currentYear = ref(new Date().getFullYear())
@@ -238,6 +330,95 @@ const closeMenu = () => {
   menuOpen.value = false
 }
 
+// Временные функции авторизации
+const adminLogin = async (credentials: { login: string; password: string }) => {
+  try {
+    isLoading.value = true
+    
+    // Демо-версия - простая проверка
+    if (credentials.login === 'admin' && credentials.password === 'admin123') {
+      isAdmin.value = true
+      adminUser.value = {
+        id: 1,
+        login: 'admin',
+        role: 'admin',
+        name: 'Администратор'
+      }
+      
+      // Сохраняем в localStorage для демо
+      if (process.client) {
+        localStorage.setItem('isAdmin', 'true')
+        localStorage.setItem('adminUser', JSON.stringify(adminUser.value))
+      }
+      
+      return { success: true }
+    } else {
+      return { success: false, error: 'Неверный логин или пароль' }
+    }
+  } catch (error: any) {
+    console.error('Ошибка входа:', error)
+    return { 
+      success: false, 
+      error: error.data?.error || 'Ошибка соединения с сервером' 
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const adminLogout = () => {
+  isAdmin.value = false
+  adminUser.value = null
+  
+  if (process.client) {
+    localStorage.removeItem('isAdmin')
+    localStorage.removeItem('adminUser')
+  }
+}
+
+const checkAdminAuth = () => {
+  if (process.client) {
+    const savedAdmin = localStorage.getItem('isAdmin')
+    if (savedAdmin === 'true') {
+      isAdmin.value = true
+      const savedUser = localStorage.getItem('adminUser')
+      if (savedUser) {
+        adminUser.value = JSON.parse(savedUser)
+      }
+    }
+  }
+}
+
+// Функции авторизации
+const login = async () => {
+  try {
+    const result = await adminLogin(adminCredentials.value)
+    
+    if (result.success) {
+      showAdminLogin.value = false
+      adminCredentials.value = { login: '', password: '' }
+      
+      // Показываем уведомление об успешном входе
+      alert('✅ Успешный вход в админ-панель!')
+    } else {
+      alert(`❌ ${result.error}`)
+    }
+  } catch (error) {
+    console.error('Ошибка авторизации:', error)
+    alert('❌ Ошибка при авторизации')
+  }
+}
+
+const logout = () => {
+  adminLogout()
+  alert('👋 Вы вышли из системы')
+}
+
+// Проверяем авторизацию при загрузке
+onMounted(() => {
+  checkAdminAuth()
+})
+
 // Закрытие меню при изменении маршрута
 watch(() => route.path, () => {
   closeMenu()
@@ -246,8 +427,13 @@ watch(() => route.path, () => {
 // Закрытие меню по Escape и клику вне меню
 onMounted(() => {
   const handleEscape = (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && menuOpen.value) {
-      closeMenu()
+    if (e.key === 'Escape') {
+      if (menuOpen.value) {
+        closeMenu()
+      }
+      if (showAdminLogin.value) {
+        showAdminLogin.value = false
+      }
     }
   }
   
