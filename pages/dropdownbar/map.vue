@@ -1,39 +1,439 @@
 <template>
-  <div class="h-screen w-full relative overflow-hidden">
-    <!-- Карта -->
-    <div class="h-full w-full">
-      <LMap 
-        ref="map"
-        :zoom="zoom" 
-        :center="center" 
-        :use-global-leaflet="false"
-        class="h-full w-full"
-        :options="{
-          zoomControl: false,
-          attributionControl: false,
-        }"
-      >
-        <LTileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          layer-type="base"
-          name="OpenStreetMap"
-        />
-        
-        <!-- Контуры лесов -->
-        <LPolygon
-          v-for="forest in forests"
-          :key="`polygon-${forest.id}`"
-          :lat-lngs="forest.polygon.coordinates[0]"
-          :options="getForestStyle(forest)"
-        />
-      </LMap>
-    </div>
+  <div class="min-h-screen bg-white">
+    <!-- Hero Section -->
+    <section class="relative py-12 bg-gradient-to-br from-green-900 to-blue-900">
+      <div class="container mx-auto px-4 sm:px-6">
+        <div class="text-center text-white mb-8">
+          <div class="inline-flex items-center gap-3 bg-green-600/90 backdrop-blur-sm text-white px-6 py-3 rounded-full mb-6">
+            <div class="w-3 h-3 bg-green-300 rounded-full animate-pulse"></div>
+            <span class="font-medium">Интерактивная карта лесов</span>
+          </div>
+          <h1 class="text-4xl md:text-5xl font-bold mb-4">Карта лесных массивов</h1>
+          <p class="text-xl text-gray-200 max-w-2xl mx-auto">
+            Изучайте лесные массивы Петропавловска, отслеживайте их состояние и получайте аналитику
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content -->
+    <section class="py-8 bg-gray-50">
+      <div class="container mx-auto px-4 sm:px-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <!-- Sidebar -->
+          <div class="lg:col-span-1 space-y-6">
+            <!-- Статистика -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
+              <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                Общая статистика
+              </h3>
+              <div class="space-y-4">
+                <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                  <span class="text-sm font-medium text-gray-700">Всего лесов</span>
+                  <span class="font-bold text-green-600">{{ forests.length }}</span>
+                </div>
+                <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                  <span class="text-sm font-medium text-gray-700">Общая площадь</span>
+                  <span class="font-bold text-blue-600">{{ totalArea }} га</span>
+                </div>
+                <div class="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                  <span class="text-sm font-medium text-gray-700">Поглощено CO₂</span>
+                  <span class="font-bold text-purple-600">{{ (totalCarbon / 1000).toFixed(0) }} тыс.т</span>
+                </div>
+                <div class="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
+                  <span class="text-sm font-medium text-gray-700">Среднее здоровье</span>
+                  <span class="font-bold text-orange-600">{{ avgHealth }}%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
+              <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                </svg>
+                Фильтры
+              </h3>
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Тип леса</label>
+                  <select 
+                    v-model="filters.type"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all duration-200"
+                  >
+                    <option value="all">Все типы</option>
+                    <option value="pine">Сосновый</option>
+                    <option value="birch">Березовый</option>
+                    <option value="mixed">Смешанный</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Здоровье: от {{ filters.health }}%
+                  </label>
+                  <input 
+                    v-model="filters.health"
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  >
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Площадь от</label>
+                    <input 
+                      v-model.number="filters.areaMin"
+                      type="number" 
+                      placeholder="0"
+                      class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all duration-200"
+                    >
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Площадь до</label>
+                    <input 
+                      v-model.number="filters.areaMax"
+                      type="number" 
+                      placeholder="1000"
+                      class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all duration-200"
+                    >
+                  </div>
+                </div>
+
+                <button 
+                  @click="resetFilters"
+                  class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                  </svg>
+                  Сбросить фильтры
+                </button>
+              </div>
+            </div>
+
+            <!-- Быстрые действия -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
+              <h3 class="text-xl font-bold text-gray-800 mb-4">Быстрые действия</h3>
+              <div class="space-y-3">
+                <button 
+                  @click="resetView"
+                  class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                  </svg>
+                  Сбросить вид карты
+                </button>
+                <button 
+                  @click="showAllForests"
+                  class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                  </svg>
+                  Показать все леса
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Карта и информация -->
+          <div class="lg:col-span-3">
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 mb-6">
+              <!-- Заголовок карты -->
+              <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-800">Интерактивная карта</h2>
+                <div class="flex items-center gap-3">
+                  <!-- Переключатель стилей карты -->
+                  <div class="flex bg-gray-100 rounded-lg p-1">
+                    <button 
+                      v-for="style in mapStyles" 
+                      :key="style.id"
+                      @click="mapStyle = style.id"
+                      :class="[
+                        'px-3 py-1 rounded-md text-sm font-medium transition-all duration-200',
+                        mapStyle === style.id 
+                          ? 'bg-white text-blue-600 shadow-sm' 
+                          : 'text-gray-600 hover:text-gray-800'
+                      ]"
+                      :title="style.name"
+                    >
+                      {{ style.shortName }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Контейнер карты -->
+              <div class="relative h-96 lg:h-[500px]">
+                <LMap 
+                  ref="map"
+                  :zoom="zoom" 
+                  :center="center" 
+                  :use-global-leaflet="false"
+                  class="h-full w-full rounded-b-2xl"
+                  :options="{
+                    zoomControl: false,
+                    attributionControl: false,
+                  }"
+                  @click="clearSelection"
+                  @moveend="onMapMove"
+                  @zoomend="onMapZoom"
+                >
+                  <!-- Основной слой OpenStreetMap -->
+                  <LTileLayer
+                    v-if="mapStyle === 'standard'"
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    layer-type="base"
+                    name="OpenStreetMap"
+                  />
+                  
+                  <!-- Альтернативные слои карты -->
+                  <LTileLayer
+                    v-if="mapStyle === 'satellite'"
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                    layer-type="base"
+                    name="Спутник"
+                  />
+                  
+                  <LTileLayer
+                    v-if="mapStyle === 'topo'"
+                    url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
+                    layer-type="base"
+                    name="Топографическая"
+                  />
+
+                  <!-- Контуры лесов -->
+                  <LPolygon
+                    v-for="forest in filteredForests"
+                    :key="`polygon-${forest.id}`"
+                    :lat-lngs="forest.polygon.coordinates[0]"
+                    :options="getForestStyle(forest)"
+                    @click="selectForest(forest)"
+                    @mouseover="hoverForest = forest"
+                    @mouseout="hoverForest = null"
+                  />
+
+                  <!-- Подсветка при наведении -->
+                  <LPolygon
+                    v-if="hoverForest && hoverForest.id !== selectedForest?.id"
+                    :lat-lngs="hoverForest.polygon.coordinates[0]"
+                    :options="getHoverStyle(hoverForest)"
+                  />
+
+                  <!-- Выделение выбранного леса -->
+                  <LPolygon
+                    v-if="selectedForest"
+                    :lat-lngs="selectedForest.polygon.coordinates[0]"
+                    :options="getSelectedStyle(selectedForest)"
+                  />
+
+                  <!-- Маркеры для важных точек -->
+                  <LMarker
+                    v-for="point in importantPoints"
+                    :key="`marker-${point.id}`"
+                    :lat-lng="point.position"
+                    :icon="getMarkerIcon(point.type)"
+                  >
+                    <LTooltip :options="{ permanent: false, direction: 'top' }">
+                      <div class="font-semibold">{{ point.name }}</div>
+                      <div class="text-xs text-gray-600">{{ point.description }}</div>
+                    </LTooltip>
+                  </LMarker>
+
+                  <!-- Легенда карты -->
+                  <LControl position="bottomright" class="custom-control">
+                    <div class="bg-white rounded-lg shadow-xl p-4 min-w-48 border border-gray-200">
+                      <h3 class="font-bold text-gray-800 mb-3 text-sm flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Легенда карты
+                      </h3>
+                      <div class="space-y-2">
+                        <div class="flex items-center justify-between group">
+                          <div class="flex items-center">
+                            <div class="w-4 h-4 bg-green-600 rounded mr-2 opacity-30 border-2 border-green-600 group-hover:opacity-50 transition-opacity"></div>
+                            <span class="text-sm text-gray-700">Сосновый лес</span>
+                          </div>
+                          <span class="text-xs text-gray-500 bg-green-50 px-2 py-1 rounded">{{ pineCount }}</span>
+                        </div>
+                        <div class="flex items-center justify-between group">
+                          <div class="flex items-center">
+                            <div class="w-4 h-4 bg-yellow-600 rounded mr-2 opacity-30 border-2 border-yellow-600 group-hover:opacity-50 transition-opacity"></div>
+                            <span class="text-sm text-gray-700">Березовый лес</span>
+                          </div>
+                          <span class="text-xs text-gray-500 bg-yellow-50 px-2 py-1 rounded">{{ birchCount }}</span>
+                        </div>
+                        <div class="flex items-center justify-between group">
+                          <div class="flex items-center">
+                            <div class="w-4 h-4 bg-blue-600 rounded mr-2 opacity-30 border-2 border-blue-600 group-hover:opacity-50 transition-opacity"></div>
+                            <span class="text-sm text-gray-700">Смешанный лес</span>
+                          </div>
+                          <span class="text-xs text-gray-500 bg-blue-50 px-2 py-1 rounded">{{ mixedCount }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </LControl>
+
+                  <!-- Контролы масштабирования -->
+                  <LControlZoom position="topleft" />
+
+                  <!-- Масштабная линейка -->
+                  <LControlScale 
+                    position="bottomleft" 
+                    :imperial="false" 
+                    :metric="true"
+                  />
+                </LMap>
+
+                <!-- Индикатор загрузки -->
+                <Transition name="fade">
+                  <div 
+                    v-if="isLoading"
+                    class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 rounded-b-2xl"
+                  >
+                    <div class="bg-white rounded-lg p-6 shadow-xl">
+                      <div class="flex items-center space-x-3">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <span class="text-gray-700 font-semibold">Загрузка карты...</span>
+                      </div>
+                    </div>
+                  </div>
+                </Transition>
+              </div>
+            </div>
+
+            <!-- Информация о выбранном лесе -->
+            <Transition name="panel">
+              <div 
+                v-if="selectedForest"
+                class="bg-white rounded-2xl shadow-lg p-6 border border-gray-200"
+              >
+                <div class="flex justify-between items-start mb-6">
+                  <div>
+                    <h3 class="text-2xl font-bold text-gray-800">{{ selectedForest.name }}</h3>
+                    <div class="flex items-center mt-2">
+                      <div 
+                        class="w-3 h-3 rounded-full mr-2 border-2"
+                        :class="getTypeColorClass(selectedForest.type)"
+                      ></div>
+                      <span class="text-sm text-gray-600 capitalize">
+                        {{ getTypeName(selectedForest.type) }}
+                      </span>
+                    </div>
+                  </div>
+                  <button 
+                    @click="clearSelection"
+                    class="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-lg"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                  <div class="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                    <div class="text-xs text-blue-600 font-semibold mb-1">ПЛОЩАДЬ</div>
+                    <div class="font-bold text-gray-800 text-xl">{{ selectedForest.area }} га</div>
+                  </div>
+                  <div class="bg-green-50 p-4 rounded-xl border border-green-200">
+                    <div class="text-xs text-green-600 font-semibold mb-1">ВОЗРАСТ</div>
+                    <div class="font-bold text-gray-800 text-xl">{{ selectedForest.age }} лет</div>
+                  </div>
+                  <div class="bg-purple-50 p-4 rounded-xl border border-purple-200">
+                    <div class="text-xs text-purple-600 font-semibold mb-1">БИОРАЗНООБРАЗИЕ</div>
+                    <div class="font-bold text-gray-800 text-xl">{{ selectedForest.biodiversity }}%</div>
+                  </div>
+                  <div class="bg-orange-50 p-4 rounded-xl border border-orange-200">
+                    <div class="text-xs text-orange-600 font-semibold mb-1">ЦЕННОСТЬ</div>
+                    <div class="font-bold text-gray-800 text-xl">{{ calculateValueIndex(selectedForest) }}/100</div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <!-- Здоровье -->
+                  <div class="bg-white p-4 rounded-xl border border-gray-200">
+                    <div class="flex justify-between items-center mb-3">
+                      <span class="text-sm font-semibold text-gray-700">Состояние здоровья</span>
+                      <span class="text-sm font-bold" :class="getHealthTextColor(selectedForest.health)">
+                        {{ selectedForest.health }}%
+                      </span>
+                    </div>
+                    <div class="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                      <div 
+                        class="h-full rounded-full transition-all duration-1000"
+                        :class="getHealthColor(selectedForest.health)"
+                        :style="{ width: selectedForest.health + '%' }"
+                      ></div>
+                    </div>
+                  </div>
+
+                  <!-- Поглощение углерода -->
+                  <div class="bg-gradient-to-r from-green-500 to-emerald-600 p-4 rounded-xl text-white">
+                    <div class="text-xs font-semibold text-green-100 mb-1">ПОГЛОЩЕНО УГЛЕРОДА</div>
+                    <div class="font-bold text-2xl">{{ selectedForest.carbon.toLocaleString() }} т</div>
+                    <div class="text-green-100 text-xs mt-1">Эквивалент CO₂</div>
+                  </div>
+                </div>
+
+                <!-- Дополнительная информация -->
+                <div class="mt-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                  <h4 class="font-semibold text-gray-800 mb-3">Детальная информация</h4>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                    <div class="flex justify-between py-2 border-b border-gray-200">
+                      <span>Плотность древостоя:</span>
+                      <span class="font-semibold text-gray-800">{{ calculateDensity(selectedForest) }} дер/га</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-200">
+                      <span>Запас углерода:</span>
+                      <span class="font-semibold text-gray-800">{{ calculateCarbonDensity(selectedForest).toFixed(1) }} т/га</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-200">
+                      <span>Координаты центра:</span>
+                      <span class="font-semibold text-gray-800">{{ getForestCenter(selectedForest)[0].toFixed(4) }}, {{ getForestCenter(selectedForest)[1].toFixed(4) }}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-200">
+                      <span>Дата последнего обхода:</span>
+                      <span class="font-semibold text-gray-800">{{ new Date().toLocaleDateString() }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Transition>
+
+            <!-- Сообщение при отсутствии выбора -->
+            <div 
+              v-if="!selectedForest"
+              class="bg-white rounded-2xl shadow-lg p-8 border border-gray-200 text-center"
+            >
+              <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                </svg>
+              </div>
+              <h3 class="text-xl font-bold text-gray-800 mb-2">Выберите лес на карте</h3>
+              <p class="text-gray-600">Кликните на любой лесной массив для просмотра детальной информации</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import { ref, reactive, computed, onMounted } from 'vue'
 
 // Фикс для маркеров
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -43,11 +443,33 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 })
 
+// Импорты Vue
 const map = ref()
 const zoom = ref(11)
 const center = ref<[number, number]>([54.89, 69.10])
+const selectedForest = ref<any>(null)
+const hoverForest = ref<any>(null)
+const isLoading = ref(false)
+const currentZoom = ref(11)
+const currentCenter = ref<[number, number]>([54.89, 69.10])
+const mapStyle = ref('standard')
 
-// Статические данные по лесам с реальными контурами
+// Стили карты
+const mapStyles = ref([
+  { id: 'standard', name: 'Стандарт', shortName: 'Станд' },
+  { id: 'satellite', name: 'Спутник', shortName: 'Спут' },
+  { id: 'topo', name: 'Топо', shortName: 'Топо' }
+])
+
+// Фильтры
+const filters = reactive({
+  type: 'all',
+  health: 0,
+  areaMin: null as number | null,
+  areaMax: null as number | null
+})
+
+// Данные лесов с правильными координатами
 const forests = ref([
   {
     id: 1,
@@ -166,7 +588,7 @@ const forests = ref([
   },
   {
     id: 4,
-    name: 'Смешанный лес (восток)',
+    name: 'Смешанный лес (центр)',
     type: 'mixed',
     area: 450,
     health: 78,
@@ -513,7 +935,98 @@ const forests = ref([
 }
 ])
 
+// Важные точки на карте
+const importantPoints = ref([
+  {
+    id: 1,
+    name: 'Лесничество',
+    type: 'management',
+    position: [54.895, 69.125],
+    description: 'Центр управления лесным хозяйством'
+  },
+  {
+    id: 2,
+    name: 'Пикниковая зона',
+    type: 'recreation',
+    position: [54.828, 69.125],
+    description: 'Место для отдыха и пикников'
+  },
+  {
+    id: 3,
+    name: 'Научная станция',
+    type: 'research',
+    position: [54.865, 69.095],
+    description: 'Исследования лесных экосистем'
+  },
+  {
+    id: 4,
+    name: 'Пожарная вышка',
+    type: 'firewatch',
+    position: [54.912, 69.200],
+    description: 'Наблюдение за пожарной безопасностью'
+  }
+])
+
+// Вычисляемые свойства
+const totalArea = computed(() => {
+  return forests.value.reduce((sum, forest) => sum + forest.area, 0)
+})
+
+const totalCarbon = computed(() => {
+  return forests.value.reduce((sum, forest) => sum + forest.carbon, 0)
+})
+
+const avgHealth = computed(() => {
+  const avg = forests.value.reduce((sum, forest) => sum + forest.health, 0) / forests.value.length
+  return Math.round(avg)
+})
+
+const pineCount = computed(() => {
+  return forests.value.filter(f => f.type === 'pine').length
+})
+
+const birchCount = computed(() => {
+  return forests.value.filter(f => f.type === 'birch').length
+})
+
+const mixedCount = computed(() => {
+  return forests.value.filter(f => f.type === 'mixed').length
+})
+
+const filteredForests = computed(() => {
+  return forests.value.filter(forest => {
+    const typeMatch = filters.type === 'all' || forest.type === filters.type
+    const healthMatch = forest.health >= filters.health
+    const areaMinMatch = filters.areaMin === null || forest.area >= filters.areaMin
+    const areaMaxMatch = filters.areaMax === null || forest.area <= filters.areaMax
+    
+    return typeMatch && healthMatch && areaMinMatch && areaMaxMatch
+  })
+})
+
+// Методы
 const getForestStyle = (forest: any) => {
+  const typeColors: { [key: string]: string } = {
+    'pine': '#059669',
+    'birch': '#CA8A04',
+    'mixed': '#2563EB'
+  }
+  
+  const baseColor = typeColors[forest.type] || '#6B7280'
+  const isSelected = selectedForest.value?.id === forest.id
+  const isHovered = hoverForest.value?.id === forest.id
+  
+  return {
+    color: baseColor,
+    weight: isSelected ? 4 : (isHovered ? 3 : 2),
+    opacity: isSelected ? 1 : (isHovered ? 0.9 : 0.7),
+    fillColor: baseColor,
+    fillOpacity: isSelected ? 0.4 : (isHovered ? 0.25 : 0.2),
+    className: isSelected ? 'selected-forest' : ''
+  }
+}
+
+const getHoverStyle = (forest: any) => {
   const typeColors: { [key: string]: string } = {
     'pine': '#059669',
     'birch': '#CA8A04',
@@ -523,31 +1036,261 @@ const getForestStyle = (forest: any) => {
   const baseColor = typeColors[forest.type] || '#6B7280'
   
   return {
-    color: baseColor,
+    color: '#9333EA',
     weight: 3,
     opacity: 0.8,
     fillColor: baseColor,
-    fillOpacity: 0.3,
+    fillOpacity: 0.15,
+    className: 'hover-forest'
   }
 }
+
+const getSelectedStyle = (forest: any) => {
+  return {
+    color: '#DC2626',
+    weight: 5,
+    opacity: 0.9,
+    fillColor: 'transparent',
+    fillOpacity: 0,
+    className: 'selected-forest-outline'
+  }
+}
+
+const getTypeColorClass = (type: string) => {
+  const colors: { [key: string]: string } = {
+    'pine': 'bg-green-600 border-green-600',
+    'birch': 'bg-yellow-600 border-yellow-600',
+    'mixed': 'bg-blue-600 border-blue-600'
+  }
+  return colors[type] || 'bg-gray-600 border-gray-600'
+}
+
+const getTypeName = (type: string) => {
+  const names: { [key: string]: string } = {
+    'pine': 'сосновый',
+    'birch': 'березовый',
+    'mixed': 'смешанный'
+  }
+  return names[type] || type
+}
+
+const getHealthColor = (health: number) => {
+  if (health >= 80) return 'bg-green-500'
+  if (health >= 60) return 'bg-yellow-500'
+  if (health >= 40) return 'bg-orange-500'
+  return 'bg-red-500'
+}
+
+const getHealthTextColor = (health: number) => {
+  if (health >= 80) return 'text-green-600'
+  if (health >= 60) return 'text-yellow-600'
+  if (health >= 40) return 'text-orange-600'
+  return 'text-red-600'
+}
+
+const getMarkerIcon = (type: string) => {
+  const colors: { [key: string]: string } = {
+    'management': 'blue',
+    'recreation': 'green',
+    'research': 'purple',
+    'firewatch': 'red'
+  }
+  
+  const color = colors[type] || 'gray'
+  
+  return L.divIcon({
+    className: `custom-marker ${color}-marker`,
+    html: `
+      <div class="relative">
+        <div class="w-5 h-5 rounded-full bg-${color}-500 border-2 border-white shadow-lg"></div>
+      </div>
+    `,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+  })
+}
+
+const getForestCenter = (forest: any) => {
+  const coords = forest.polygon.coordinates[0]
+  const lat = coords.reduce((sum: number, coord: [number, number]) => sum + coord[0], 0) / coords.length
+  const lng = coords.reduce((sum: number, coord: [number, number]) => sum + coord[1], 0) / coords.length
+  return [lat, lng] as [number, number]
+}
+
+const selectForest = (forest: any) => {
+  selectedForest.value = forest
+  // Центрируем карту на выбранном лесе
+  if (map.value) {
+    const leafletMap = map.value.leafletObject
+    const bounds = L.latLngBounds(forest.polygon.coordinates[0])
+    leafletMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 })
+  }
+}
+
+const clearSelection = () => {
+  selectedForest.value = null
+}
+
+// Функция сброса карты к исходному виду
+const resetView = () => {
+  if (map.value) {
+    const leafletMap = map.value.leafletObject
+    leafletMap.setView(center.value, zoom.value)
+    clearSelection()
+  }
+}
+
+// Функция сброса фильтров
+const resetFilters = () => {
+  filters.type = 'all'
+  filters.health = 0
+  filters.areaMin = null
+  filters.areaMax = null
+}
+
+// Функция показа всех лесов
+const showAllForests = () => {
+  if (map.value && forests.value.length > 0) {
+    const leafletMap = map.value.leafletObject
+    const bounds = new L.LatLngBounds([])
+    
+    forests.value.forEach(forest => {
+      bounds.extend(L.latLngBounds(forest.polygon.coordinates[0]))
+    })
+    
+    leafletMap.fitBounds(bounds, { padding: [50, 50] })
+    clearSelection()
+  }
+}
+
+const onMapMove = (event: any) => {
+  const leafletMap = map.value.leafletObject
+  currentCenter.value = leafletMap.getCenter()
+}
+
+const onMapZoom = (event: any) => {
+  const leafletMap = map.value.leafletObject
+  currentZoom.value = leafletMap.getZoom()
+}
+
+const calculateDensity = (forest: any) => {
+  const baseDensity = forest.type === 'pine' ? 1200 : forest.type === 'birch' ? 800 : 1000
+  const ageFactor = Math.min(forest.age / 50, 1.5)
+  const healthFactor = forest.health / 100
+  return Math.round(baseDensity * ageFactor * healthFactor)
+}
+
+const calculateCarbonDensity = (forest: any) => {
+  return forest.carbon / forest.area
+}
+
+const calculateValueIndex = (forest: any) => {
+  const healthScore = forest.health * 0.4
+  const biodiversityScore = forest.biodiversity * 0.3
+  const carbonScore = (forest.carbon / 1000) * 0.2
+  const ageScore = Math.min(forest.age / 2, 10)
+  return Math.min(Math.round(healthScore + biodiversityScore + carbonScore + ageScore), 100)
+}
+
+// Инициализация
+onMounted(() => {
+  isLoading.value = true
+  setTimeout(() => {
+    isLoading.value = false
+  }, 1000)
+})
 </script>
 
 <style scoped>
-/* Убираем скролл и отступы */
+/* Стили для карты */
 :deep(.leaflet-container) {
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
   margin: 0;
   padding: 0;
+  font-family: inherit;
+  border-radius: 0 0 1rem 1rem;
 }
 
-/* Убираем контролы leaflet */
-:deep(.leaflet-control-container) {
-  display: none;
+/* Элементы управления картой */
+:deep(.custom-control) {
+  background: transparent !important;
+  border: none !important;
+  z-index: 10;
 }
 
-/* Убираем аттрибуцию в углу */
-:deep(.leaflet-control-attribution) {
-  display: none;
+/* Стили для маркеров */
+:deep(.custom-marker) {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Анимации */
+.panel-enter-active,
+.panel-leave-active {
+  transition: all 0.3s ease;
+}
+
+.panel-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.panel-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Стили для выбранных лесов */
+:deep(.selected-forest) {
+  animation: pulse 2s infinite;
+}
+
+:deep(.hover-forest) {
+  animation: bounce 0.5s ease-in-out;
+}
+
+/* Кастомный стиль для слайдера */
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider::-moz-range-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes pulse {
+  0% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+  100% { opacity: 0.4; }
+}
+
+@keyframes bounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
 }
 </style>

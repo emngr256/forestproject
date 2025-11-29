@@ -1,9 +1,9 @@
 <template>
-  <div class="min-h-screen">
-    <!-- Фиксированный header -->
-    <header class="fixed top-0 left-0 right-0 z-[9999]">
-      <!-- Кнопка меню и логотип -->
-      <div class="flex items-center justify-start p-4 gap-4">
+  <div class="min-h-screen flex flex-col">
+    <!-- Фиксированный header ПОЛНОСТЬЮ ПРОЗРАЧНЫЙ И НЕОСЯЗАЕМЫЙ -->
+    <header class="fixed top-0 left-0 right-0 z-[10000] pointer-events-none">
+      <!-- Только функциональные элементы получают pointer-events -->
+      <div class="flex items-center justify-start p-4 gap-4 pointer-events-auto">
         <!-- Кнопка меню -->
         <button 
           @click="toggleMenu"
@@ -48,7 +48,7 @@
       >
         <div 
           v-show="menuOpen"
-          class="dropdown-menu"
+          class="dropdown-menu pointer-events-auto"
         >
           <div class="menu-header">
             <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
@@ -62,43 +62,46 @@
 
           <div class="menu-divider"></div>
 
-          <NuxtLink 
-            v-for="item in menuItems" 
-            :key="item.path"
-            :to="item.path" 
-            class="menu-item group"
-            @click="closeMenu"
-            :class="{ 'active': $route.path === item.path }"
-          >
-            <div class="menu-item-content">
-              <span class="menu-icon">{{ item.icon }}</span>
-              <span class="menu-label">{{ item.label }}</span>
-            </div>
-            <div class="menu-arrow">→</div>
-          </NuxtLink>
+          <!-- Основные пункты меню -->
+          <div class="menu-section">
+            <div class="menu-section-title">Основные разделы</div>
+            <NuxtLink 
+              v-for="item in mainMenuItems" 
+              :key="item.path"
+              :to="item.path" 
+              class="menu-item group"
+              @click="closeMenu"
+              :class="{ 'active': $route.path === item.path }"
+            >
+              <div class="menu-item-content">
+                <span class="menu-icon">{{ item.icon }}</span>
+                <span class="menu-label">{{ item.label }}</span>
+              </div>
+              <div class="menu-arrow">→</div>
+            </NuxtLink>
+          </div>
 
           <div class="menu-divider"></div>
 
-          <!-- Быстрые действия в меню -->
-          <div class="px-4 py-2">
-            <div class="text-xs text-gray-400 mb-2">Быстрые действия</div>
-            <div class="grid grid-cols-2 gap-2">
-              <NuxtLink 
-                to="/reports" 
-                class="quick-action-menu-btn"
-                @click="closeMenu"
-              >
-                📊 Отчёты
-              </NuxtLink>
-              <NuxtLink 
-                to="/suggestions" 
-                class="quick-action-menu-btn"
-                @click="closeMenu"
-              >
-                💡 Предложения
-              </NuxtLink>
-            </div>
+          <!-- Быстрые действия - объединены с основными -->
+          <div class="menu-section">
+            <NuxtLink 
+              v-for="item in quickActionItems" 
+              :key="item.path"
+              :to="item.path" 
+              class="menu-item group"
+              @click="closeMenu"
+              :class="{ 'active': $route.path === item.path }"
+            >
+              <div class="menu-item-content">
+                <span class="menu-icon">{{ item.icon }}</span>
+                <span class="menu-label">{{ item.label }}</span>
+              </div>
+              <div class="menu-arrow">→</div>
+            </NuxtLink>
           </div>
+
+          <div class="menu-divider"></div>
 
           <!-- Кнопка админ-панели в меню -->
           <div class="px-4 py-3">
@@ -127,31 +130,24 @@
               Проверка...
             </button>
           </div>
-
-          <!-- Контактная информация в меню -->
-          <div class="px-4 py-3 bg-black/30 mt-2">
-            <div class="text-xs text-gray-400 mb-1">Контакты</div>
-            <div class="text-sm text-white">+7 707 913 4080</div>
-            <div class="text-xs text-gray-300 truncate">alan27945@gmail.com km9294949@gmail.com </div>
-          </div>
         </div>
       </transition>
 
       <!-- Overlay для закрытия меню -->
       <div 
         v-show="menuOpen"
-        class="menu-overlay"
+        class="menu-overlay pointer-events-auto"
         @click="closeMenu"
       ></div>
     </header>
 
-    <!-- Основной контент -->
-    <main class="min-h-screen">
+    <!-- Основной контент БЕЗ отступа сверху -->
+    <main class="flex-1">
       <slot />
     </main>
 
     <!-- Модальное окно авторизации -->
-    <div v-if="showAdminLogin" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
+    <div v-if="showAdminLogin" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10001] pointer-events-auto">
       <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full mx-4">
         <h2 class="text-2xl font-bold text-gray-800 mb-6">🔐 Авторизация администратора</h2>
         
@@ -202,88 +198,143 @@
       </div>
     </div>
 
-    <!-- Footer -->
-    <footer id="contact" class="bg-gray-900 text-gray-300 py-12">
-      <div class="container mx-auto px-4">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-          <!-- About Section -->
-          <div>
-            <div class="flex items-center gap-2 mb-4">
-              <div class="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
-                <span class="text-white">🌳</span>
+    <!-- Футер -->
+    <footer class="bg-gradient-to-br from-gray-900 via-green-900 to-emerald-900 text-white relative overflow-hidden">
+      <div class="absolute inset-0 bg-black/20"></div>
+      
+      <div class="relative z-10">
+        <!-- Верхняя секция -->
+        <div class="container mx-auto px-4 py-12">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <!-- Бренд -->
+            <div class="lg:col-span-2">
+              <div class="flex items-center gap-4 mb-6">
+                <div class="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center text-2xl shadow-lg">
+                  🌳
+                </div>
+                <div>
+                  <h3 class="text-3xl font-bold text-white">Forest Shield</h3>
+                  <p class="text-green-300 text-sm font-medium">ЭКО-ЗАЩИТА ПЕТРОПАВЛОВСКА</p>
+                </div>
               </div>
-              <div>
-                <div class="font-semibold text-white">Forest Shield</div>
-                <div class="text-xs">Петропавловск</div>
-              </div>
-            </div>
-            <p class="text-sm">
-              Общественная инициатива по защите и восстановлению лесов города Петропавловска.
-            </p>
-          </div>
-
-          <!-- Contacts Section -->
-          <div>
-            <h4 class="text-white mb-4">Контакты</h4>
-            <div class="space-y-3">
-              <div class="flex items-center gap-2">
-                <Mail :size="16" />
-                <span class="text-sm">alan27945@gmail.com km9294949@gmail.com</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <Phone :size="16" />
-                <span class="text-sm">+7 707 913 4080</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <MapPin :size="16" />
-                <span class="text-sm">г. Петропавловск, Казахстан</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Social Media Section -->
-          <div>
-            <h4 class="text-white mb-4">Следите за нами</h4>
-            <div class="flex gap-4">
-              <a 
-                href="https://aim-urbathon.netlify.app/" 
-                class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors"
-                aria-label="Netlify"
-              >
-                <Monitor :size="20" />
-              </a>
-              <a 
-                href="https://github.com/emngr256/forestproject" 
-                class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors"
-                aria-label="Github"
-              >
-                <Github :size="20" />
-              </a>
-              <a 
-                href="https://github.com/mansur2286969sgma/urb-back" 
-                class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors"
-                aria-label="Github"
-              >
-                <Github :size="20" />
-              </a>
-            </div>
-            <div class="mt-6">
-              <p class="text-sm text-gray-400">
-                Присоединяйтесь к нашему сообществу и получайте новости о природоохранных мероприятиях.
+              <p class="text-green-100 text-lg leading-relaxed mb-6 max-w-md">
+                Общественная инициатива по защите и восстановлению зелёных зон города. 
+                Мы создаём устойчивое экологическое будущее вместе.
               </p>
+              
+              <!-- Статистика -->
+              <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="text-center p-4 bg-green-800/30 rounded-xl border border-green-700/50">
+                  <div class="text-2xl font-bold text-white mb-1">1,250+</div>
+                  <div class="text-xs text-green-300">Деревьев посажено</div>
+                </div>
+                <div class="text-center p-4 bg-green-800/30 rounded-xl border border-green-700/50">
+                  <div class="text-2xl font-bold text-white mb-1">24</div>
+                  <div class="text-xs text-green-300">Проектов</div>
+                </div>
+                <div class="text-center p-4 bg-green-800/30 rounded-xl border border-green-700/50">
+                  <div class="text-2xl font-bold text-white mb-1">150+</div>
+                  <div class="text-xs text-green-300">Волонтёров</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Навигация -->
+            <div>
+              <h4 class="text-white font-bold text-lg mb-6 pb-2 border-b border-green-700/50">Навигация</h4>
+              <nav class="space-y-3">
+                <NuxtLink 
+                  v-for="link in navLinks"
+                  :key="link.path"
+                  :to="link.path"
+                  class="flex items-center gap-3 text-green-200 hover:text-white transition-colors group"
+                >
+                  <span class="text-lg">{{ link.icon }}</span>
+                  <span>{{ link.label }}</span>
+                </NuxtLink>
+              </nav>
+            </div>
+
+            <!-- Контакты -->
+            <div>
+              <h4 class="text-white font-bold text-lg mb-6 pb-2 border-b border-green-700/50">Контакты</h4>
+              <div class="space-y-4">
+                <div class="flex items-center gap-3">
+                  <Mail class="w-5 h-5 text-green-400" />
+                  <div>
+                    <div class="text-green-300 text-sm">Email</div>
+                    <div class="text-white text-sm">alan27945@gmail.com</div>
+                    <div class="text-white text-sm">km9294949@gmail.com</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <Phone class="w-5 h-5 text-green-400" />
+                  <div>
+                    <div class="text-green-300 text-sm">Телефон</div>
+                    <div class="text-white">+7 707 913 4080</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <MapPin class="w-5 h-5 text-green-400" />
+                  <div>
+                    <div class="text-green-300 text-sm">Адрес</div>
+                    <div class="text-white">г. Петропавловск, Казахстан</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Соцсети -->
+              <div class="mt-6">
+                <h5 class="text-white font-semibold mb-4">Мы в соцсетях</h5>
+                <div class="flex gap-3">
+                  <a 
+                    v-for="social in socialLinks"
+                    :key="social.name"
+                    :href="social.url"
+                    class="w-12 h-12 bg-green-800/30 rounded-xl flex items-center justify-center hover:bg-green-700 transition-colors border border-green-700/50"
+                    :aria-label="social.name"
+                  >
+                    <component :is="social.icon" class="w-5 h-5 text-green-400" />
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Copyright Section -->
-        <div class="border-t border-gray-800 pt-8">
-          <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p class="text-sm text-gray-400">
-              © {{ currentYear }} Все права защищены.
-            </p>
-            <div class="flex gap-6 text-sm">
-              <button @click="$router.push('/policy')" class="hover:text-white transition-colors px-4 py-2 hover:bg-green-500 rounded">Политика конфиденциальности</button>
-              <button @click="$router.push('/conditions')" class="hover:text-white transition-colors px-4 py-2 hover:bg-green-500 rounded">Условия использования</button>
+        <!-- Нижняя часть -->
+        <div class="border-t border-green-800/50">
+          <div class="container mx-auto px-4 py-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+              <!-- Копирайт -->
+              <div class="text-center md:text-left">
+                <p class="text-green-300">
+                  © {{ currentYear }} Forest Shield. С любовью к природе ❤️
+                </p>
+              </div>
+
+              <!-- Дополнительные ссылки -->
+              <div class="flex flex-wrap justify-center gap-4">
+                <button 
+                  v-for="link in legalLinks"
+                  :key="link.path"
+                  @click="$router.push(link.path)"
+                  class="text-green-400 hover:text-white transition-colors text-sm"
+                >
+                  {{ link.label }}
+                </button>
+              </div>
+
+              <!-- Кнопка наверх -->
+              <button 
+                @click="scrollToTop"
+                class="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center hover:bg-green-500 transition-colors text-white"
+                aria-label="Вернуться наверх"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                </svg>
+              </button>
             </div>
           </div>
         </div>
@@ -293,14 +344,12 @@
 </template>
 
 <script setup lang="ts">
-import { Mail, Phone, MapPin, Youtube, Github, Monitor } from 'lucide-vue-next'
+import { Mail, Phone, MapPin, Github, Monitor } from 'lucide-vue-next'
 
-// Временное решение - локальное состояние
+// Состояние
 const isAdmin = ref(false)
 const isLoading = ref(false)
 const adminUser = ref(null)
-
-// Состояние меню
 const menuOpen = ref(false)
 const route = useRoute()
 const showAdminLogin = ref(false)
@@ -314,14 +363,43 @@ const adminCredentials = ref({
 // Текущий год
 const currentYear = ref(new Date().getFullYear())
 
-// Элементы меню
-const menuItems = [
+// Основные элементы меню
+const mainMenuItems = [
   { path: '/', label: 'Главная', icon: '🏠' },
   { path: '/dropdownbar/map', label: 'Карта', icon: '🗺️' },
+]
+
+// Элементы быстрого доступа
+const quickActionItems = [
+  { path: '/reports', label: 'Отчёты', icon: '📊' },
   { path: '/suggestions', label: 'Предложения', icon: '💡' },
 ]
 
-// Функции управления меню
+// Навигационные ссылки
+const navLinks = [
+  { path: '/', label: 'Главная', icon: '🏠' },
+  { path: '/dropdownbar/map', label: 'Карта', icon: '🗺️' },
+  { path: '/reports', label: 'Отчёты', icon: '📊' },
+  { path: '/suggestions', label: 'Предложения', icon: '💡' },
+  { path: '/about', label: 'О нас', icon: '👥' },
+  { path: '/footer/volunteer', label: 'Волонтёрство', icon: '🌱' },
+]
+
+// Социальные сети
+const socialLinks = [
+  { name: 'Netlify', url: 'https://aim-urbathon.netlify.app/', icon: Monitor },
+  { name: 'GitHub Frontend', url: 'https://github.com/emngr256/forestproject', icon: Github },
+  { name: 'GitHub Backend', url: 'https://github.com/mansur2286969sgma/urb-back', icon: Github },
+]
+
+// Юридические ссылки
+const legalLinks = [
+  { path: '/policy', label: 'Политика конфиденциальности' },
+  { path: '/footer/conditions', label: 'Условия использования' },
+  { path: '/donate', label: 'Поддержать проект' }
+]
+
+// Функции
 const toggleMenu = () => {
   menuOpen.value = !menuOpen.value
 }
@@ -330,12 +408,18 @@ const closeMenu = () => {
   menuOpen.value = false
 }
 
-// Временные функции авторизации
+const scrollToTop = () => {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  })
+}
+
+// Функции авторизации
 const adminLogin = async (credentials: { login: string; password: string }) => {
   try {
     isLoading.value = true
     
-    // Демо-версия - простая проверка
     if (credentials.login === 'admin' && credentials.password === 'admin123') {
       isAdmin.value = true
       adminUser.value = {
@@ -345,7 +429,6 @@ const adminLogin = async (credentials: { login: string; password: string }) => {
         name: 'Администратор'
       }
       
-      // Сохраняем в localStorage для демо
       if (process.client) {
         localStorage.setItem('isAdmin', 'true')
         localStorage.setItem('adminUser', JSON.stringify(adminUser.value))
@@ -389,7 +472,6 @@ const checkAdminAuth = () => {
   }
 }
 
-// Функции авторизации
 const login = async () => {
   try {
     const result = await adminLogin(adminCredentials.value)
@@ -397,8 +479,6 @@ const login = async () => {
     if (result.success) {
       showAdminLogin.value = false
       adminCredentials.value = { login: '', password: '' }
-      
-      // Показываем уведомление об успешном входе
       alert('✅ Успешный вход в админ-панель!')
     } else {
       alert(`❌ ${result.error}`)
@@ -423,26 +503,6 @@ onMounted(() => {
 watch(() => route.path, () => {
   closeMenu()
 })
-
-// Закрытие меню по Escape и клику вне меню
-onMounted(() => {
-  const handleEscape = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      if (menuOpen.value) {
-        closeMenu()
-      }
-      if (showAdminLogin.value) {
-        showAdminLogin.value = false
-      }
-    }
-  }
-  
-  window.addEventListener('keydown', handleEscape)
-  
-  onUnmounted(() => {
-    window.removeEventListener('keydown', handleEscape)
-  })
-})
 </script>
 
 <style scoped>
@@ -453,13 +513,17 @@ html, body {
   overflow-x: hidden;
 }
 
-/* Кнопка меню - как в старом варианте */
+/* Хедер полностью неосязаемый */
+header {
+  background: transparent !important;
+}
+
+/* Кнопка меню - единственный осязаемый элемент */
 .menu-button {
   padding: 12px;
   background-color: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(8px);
   border-radius: 9999px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
@@ -475,7 +539,7 @@ html, body {
   transform: scale(0.95);
 }
 
-/* Выпадающее меню - поверх всего сайта */
+/* Выпадающее меню */
 .dropdown-menu {
   position: absolute;
   top: 72px;
@@ -487,7 +551,7 @@ html, body {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   padding: 12px 0;
   min-width: 280px;
-  z-index: 10000;
+  z-index: 10001;
   border: 1px solid rgba(255, 255, 255, 0.2);
   overflow: hidden;
 }
@@ -506,7 +570,22 @@ html, body {
   margin: 8px 16px;
 }
 
-/* Элемент меню - улучшенная версия */
+/* Секции меню */
+.menu-section {
+  padding: 0 8px;
+}
+
+.menu-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 8px 16px 4px;
+  margin-bottom: 4px;
+}
+
+/* Элемент меню */
 .menu-item {
   display: block;
   margin: 4px 8px;
@@ -559,27 +638,7 @@ html, body {
   transform: translateX(0);
 }
 
-/* Кнопки быстрого действия в меню */
-.quick-action-menu-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 12px;
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  text-align: center;
-}
-
-.quick-action-menu-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Overlay - поверх всего */
+/* Overlay */
 .menu-overlay {
   position: fixed;
   top: 0;
@@ -588,10 +647,10 @@ html, body {
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(4px);
-  z-index: 9999;
+  z-index: 10000;
 }
 
-/* Логотип рядом с бургером - как в старом варианте */
+/* Логотип рядом с бургером */
 .logo-link-side {
   display: flex;
   align-items: center;
@@ -601,7 +660,6 @@ html, body {
   backdrop-filter: blur(8px);
   border-radius: 9999px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
 
@@ -614,12 +672,6 @@ html, body {
   font-weight: 600;
   font-size: 18px;
   letter-spacing: 0.025em;
-}
-
-/* Footer heading */
-h4 {
-  font-size: 18px;
-  font-weight: 600;
 }
 
 /* Адаптивность */
